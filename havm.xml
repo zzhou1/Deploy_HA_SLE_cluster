@@ -59,7 +59,7 @@
     <image_installation config:type="boolean">false</image_installation>
   </deploy_image>
   <keyboard>
-    <keymap>french</keymap>
+    <keymap>local</keymap>
   </keyboard>
   <login_settings/>
   <networking>
@@ -205,24 +205,6 @@
   <users config:type="list">
     <user>
       <encrypted config:type="boolean">true</encrypted>
-      <fullname>aginies</fullname>
-      <gid>100</gid>
-      <home>/home/aginies</home>
-      <password_settings>
-	<expire/>
-	<flag/>
-	<inact/>
-	<max>99999</max>
-	<min>0</min>
-	<warn>7</warn>
-      </password_settings>
-      <shell>/bin/bash</shell>
-      <uid>1000</uid>
-      <user_password>$6$xY17NdMS0M9R$d3F8dm3B/.T4jhi3n/XWNhyRO9I6HthxdBBMxZ9LCIuKtI3wSVavBW64G86tOAAc0CklvsPViyT9lOuaHxc5L0</user_password>
-      <username>aginies</username>
-    </user>
-    <user>
-      <encrypted config:type="boolean">true</encrypted>
       <fullname>root</fullname>
       <gid>0</gid>
       <home>/root</home>
@@ -236,7 +218,7 @@
       </password_settings>
       <shell>/bin/bash</shell>
       <uid>0</uid>
-      <user_password>$6$Wa9BNOQh5cjJ$0G99sgb1WtqYaCZulBBkPzHrmEj49zumisslpcitXmasNeFj63Yl97w.ODcxhNWix.XWYhbf9BLsnJjNZOdO8/</user_password>
+      <user_password>$6$pc/0vAulQjjO$2nZYITEzgIh2Hsu7HmjE1YDyi8jx7H2jup3EGXe.li6wOwa1Hef2NDkR6RafCiy3NJGoeX4yGYJZhSAiy3o2Z0</user_password>
       <username>root</username>
     </user>
   </users>

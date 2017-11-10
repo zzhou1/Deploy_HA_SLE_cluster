@@ -10,17 +10,44 @@ S=`echo -en "\\033[1;32m"`
 I=`echo -en "\\033[1;34m"`
 # WARNING / DELETE
 W=`echo -en "\\033[1;33m"`
+# FAILURE
+F=`echo -en "\\033[1;31m"`
 # OTHER
 #O=`echo -en "\\033[0;39m"`
 O=`echo -en "\\033[0m"`
 #O=`echo -en ""
-# FAILURE
-F=`echo -en "\\033[1;31m"`
+
+
+check_cmd_installation() {
+    if [ $# -lt 1 ]
+    then
+        echo "! 1 arg needed (CMD);Exiting"
+        exit 1
+    fi
+    if ! type $1>/dev/null 2>&1; then echo $F "! '$1' isn't installed yet."; exit 1; fi
+}
+
+
+load_configured_mac() {
+    if [ $# -lt 1 ]
+    then
+        echo "! 1 arg needed (CMD);Exiting"
+        exit 1
+    fi
+    MAC_POSTFIX=":`echo $1|sed 's/.*://'`"
+    MAC_ADDR=`grep mac /etc/libvirt/qemu/networks/${NETWORKNAME}.xml|sed -n "s/.*mac=\"\(.*${MAC_POSTFIX}\).*/\1/p"`
+    echo $MAC_ADDR
+}
+
 
 check_load_config_file() {
-if [ "$1" == "other" ]; then CDIR=`dirname $PWD`; else CDIR=$PWD; fi
+if [ ! "$1" == "" ]; then CONF="$1"; fi
+CDIR=$PWD
 if [ -f $CDIR/${CONF} ]; then
     source ${CDIR}/${CONF}
+    MACA=`load_configured_mac $MACA`
+    MACB=`load_configured_mac $MACB`
+    MACC=`load_configured_mac $MACC`
 else
     echo "!! ${CONF} not found in ${CDIR} path !!"
     exit 1
@@ -60,6 +87,7 @@ exec_pssh() {
         echo "! 1 arg needed (CMD);Exiting"
         exit 1
     fi
+    check_cmd_installation pssh
     CMD="$1"
     echo "pssh -h ${PSSHCONF} -x \"-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no\" \"$CMD\""
     pssh -h ${PSSHCONF} -x "-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" "$CMD"
@@ -76,6 +104,7 @@ scp_on_node() {
     DEST="$2"
     # avoid: No pseudo-tty detected! Use -t option to ssh if calling remotely
     echo "${NODE}: scp -o StrictHostKeyChecking=no ${FILE} ${DEST}"
+    check_cmd_installation scp
     scp -q -o StrictHostKeyChecking=no ${FILE} ${DEST}
     if [ "$?" -eq 0 ]
 	then
@@ -90,6 +119,7 @@ create_pool() {
     if [ $# -lt 1 ];then echo "! 1 arg needed: POOL_NAME; Exiting" ; exit 1; fi
     POOL=$1
     echo "############ START create a pool ${POOL} #############"
+    check_cmd_installation virsh
     virsh pool-list --all | grep ${POOL} > /dev/null
     if [ $? == "0" ]; then
         echo "- ${POOL} already present, deleting it"
