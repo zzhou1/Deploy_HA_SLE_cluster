@@ -34,9 +34,20 @@ load_configured_mac() {
         echo "! 1 arg needed (CMD);Exiting"
         exit 1
     fi
-    MAC_POSTFIX=":`echo $1|sed 's/.*://'`"
-    MAC_ADDR=`grep mac /etc/libvirt/qemu/networks/${NETWORKNAME}.xml|sed -n "s/.*mac=\"\(.*${MAC_POSTFIX}\).*/\1/p"`
-    echo $MAC_ADDR
+    MAC_POSTFIX="`echo $1|sed 's/.*://'`"
+
+    if [ "$NETMACHOST" == "" ]; then
+	echo $F "Fatal error in '$CDIR/$CONF', NETMACHOST='$NETMACHOST'."
+        exit 1
+    fi
+
+    if [ -f /etc/libvirt/qemu/networks/${NETWORKNAME}.xml ]; then
+    	MAC_ADDR=`sed -n "s/.*mac.*addr.*='\(.*\)'.*/\1/p" < /etc/libvirt/qemu/networks/${NETWORKNAME}.xml`
+    else
+    	MAC_ADDR=$NETMACHOST
+    fi
+    TMP=`echo $MAC_ADDR|sed 's/:..$//'`
+    echo "$TMP:${MAC_POSTFIX}"
 }
 
 
@@ -45,9 +56,12 @@ if [ ! "$1" == "" ]; then CONF="$1"; fi
 CDIR=$PWD
 if [ -f $CDIR/${CONF} ]; then
     source ${CDIR}/${CONF}
-    MACA=`load_configured_mac $MACA`
-    MACB=`load_configured_mac $MACB`
-    MACC=`load_configured_mac $MACC`
+    if [ -f /etc/libvirt/qemu/networks/${NETWORKNAME}.xml ]; then
+    	NETMACHOST=`load_configured_mac $NETMACHOST`
+    	MACA=`load_configured_mac $MACA`
+    	MACB=`load_configured_mac $MACB`
+    	MACC=`load_configured_mac $MACC`
+    fi
 else
     echo "!! ${CONF} not found in ${CDIR} path !!"
     exit 1
