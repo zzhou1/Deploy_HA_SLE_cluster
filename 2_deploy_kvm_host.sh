@@ -18,8 +18,29 @@ LIBVIRTPOOL="nodes_images"
 DISKHAVM="${STORAGEP}/havm_xml.raw"
 EXTRAARGS="autoyast=device://vdb/havm.xml"
 
-if [ ! -f ${HACDROM} ]; then echo "! ${HACDROM} can not be found, needed for installation! fix this in ${CONF}. Exiting!" ; exit 1; fi
-if [ ! -f ${SLECDROM} ]; then echo "! ${SLECDROM} can not be found, needed for installation! fix this in ${CONF}. Exiting!" ; exit 1; fi
+
+detect_installation_media() {
+    if [ $# -lt 1 ]; then  echo "! 1 arg needed (CMD);Exiting"; exit 1; fi
+   
+    if [ ! -f $1 ]; then
+        echo $W "! $1 can not be found, continue to check if it exists in CDROM devices."; 
+
+	TEMP="`basename "$1"|sed 's/_.*//'`"
+	[ "$TEMP" == "" ] && (echo $F "'$1' not exist. Exiting!"; exit 1;)
+
+	TEMP2=`blkid|grep "$TEMP"` 
+
+	if [ ! $? ]; then 
+		echo $F "! ${1} can not be found in CDROM devices neither. Fix this in ${CONF}. Exiting!" ; 
+		exit 1; 
+	fi
+
+	echo $TEMP2|awk -F: '{print $1}'
+    fi
+}
+
+HACDROM="`detect_installation_media $HACDROM`"
+SLECDROM="`detect_installation_media $SLECDROM`"
 
 # clean up previous VM
 cleanup_vm() {
@@ -66,6 +87,8 @@ install_vm() {
     virsh pool-refresh ${LIBVIRTPOOL}
     if [ ! -f ${VMDISK} ]; then echo "- ${VMDISK} NOT present"; exit 1; fi
     echo "- Start VM guest installation in a screen"
+
+    check_cmd_installation screen
     screen -d -m -S "install_HA_VM_guest_${NAME}" virt-install --name ${NAME} \
 	   --ram ${RAM} \
 	   --vcpus ${VCPU} \
