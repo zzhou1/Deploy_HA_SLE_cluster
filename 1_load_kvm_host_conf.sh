@@ -105,14 +105,14 @@ prepare_virtual_HAnetwork() {
   </ip>
 </network>
 EOF
+    virsh net-autostart ${NETWORKNAME}|| ( echo $F "! Fatal error: net-autostart ${NETWORKNAME}"; exit 1 )
 
     echo "- Start ${NETWORKNAME}"
+    virsh net-list | grep ${NETWORKNAME}
+    if [ x$? = x0 ]; then
+       virsh net-destroy ${NETWORKNAME}|| ( echo $F "! Fatal error: net-destory ${NETWORKNAME}"; exit 1 )
+    fi
     systemctl restart libvirtd
-    virsh net-destroy ${NETWORKNAME}|| ( echo $F "! Fatal error: net-destory ${NETWORKNAME}"; exit 1 )
-    systemctl restart libvirtd
-    virsh net-autostart ${NETWORKNAME}|| ( echo $F "! Fatal error: net-autostart ${NETWORKNAME}"; exit 1 )
-    systemctl restart libvirtd
-    #virsh net-start ${NETWORKNAME}|| ( echo $F "! Fatal error: net-start ${NETWORKNAME}"; exit 1 )
 }
 
 # Create an SBD pool on the host 
@@ -198,11 +198,11 @@ echo " press [ENTER] twice OR Ctrl+C to abort"
 read
 read
 
-#ssh_root_key
+ssh_root_key
 install_virtualization_stack
 #prepare_remote_pssh
 #prepare_etc_hosts
-prepare_virtual_HAnetwork "192.168.20"
+prepare_virtual_HAnetwork 
 #prepare_SBD_pool
 prepare_auto_deploy_image
 check_host_config

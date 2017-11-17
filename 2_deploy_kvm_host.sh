@@ -20,6 +20,7 @@ EXTRAARGS="autoyast=device://vdb/havm.xml"
 
 
 detect_installation_media() {
+    ISO_CDROM="$1"
     if [ $# -lt 1 ]; then  echo "! 1 arg needed (CMD);Exiting"; exit 1; fi
    
     if [ ! -f $1 ]; then
@@ -35,12 +36,11 @@ detect_installation_media() {
 		exit 1; 
 	fi
 
-	echo $TEMP2|awk -F: '{print $1}'
+	ISO_CDROM="`echo $TEMP2|awk -F: '{print $1}'`"
+    echo " detected in '$ISO_CDROM'."
     fi
 }
 
-HACDROM="`detect_installation_media $HACDROM`"
-SLECDROM="`detect_installation_media $SLECDROM`"
 
 # clean up previous VM
 cleanup_vm() {
@@ -75,7 +75,10 @@ cleanup_vm() {
 	echo "- Remove previous image file for VM ${NAME} (${NAME}.qcow2)"
 	rm -rvf ${STORAGEP}/${LIBVIRTPOOL}/${NAME}.qcow2
     done
+
+    clean_pool ${LIBVIRTPOOL}
 }
+
 
 # Install VM  
 install_vm() {
@@ -92,6 +95,7 @@ install_vm() {
     screen -d -m -S "install_HA_VM_guest_${NAME}" virt-install --name ${NAME} \
 	   --ram ${RAM} \
 	   --vcpus ${VCPU} \
+	   --cpu host-passthrough \
 	   --virt-type kvm \
 	   --os-variant sles12sp3 \
 	   --graphics vnc,keymap=${KEYMAP} \
@@ -138,6 +142,9 @@ rm -vf /root/.ssh/known_hosts"
 ##########################
 ##########################
 
+detect_installation_media $HACDROM; HACDROM=$ISO_CDROM
+detect_installation_media $SLECDROM; SLECDROM=$ISO_CDROM
+
 # CLEAN everything
 cleanup_vm
 
@@ -172,7 +179,7 @@ install_vm
 #install_vm
 
 # Check VM
-sleep 5
+sleep 2
 virsh list --all
 
 # Get IP address
@@ -181,7 +188,7 @@ virsh net-dhcp-leases ${NETWORKNAME}
 # List installation in progress
 screen -list
 
-#copy_ssh_key
+copy_ssh_key
 
 
 # Report the rough installation duration
@@ -190,6 +197,7 @@ IP_ADDR_LAST_VM=`grep $MAC /etc/libvirt/qemu/networks/${NETWORKNAME}.xml|sed -n 
 TIMEOUT_COUNT="600"
 for nb in `seq 1 $TIMEOUT_COUNT`
 do 
+    echo -n "."; sleep 1
     ping -q -W 1 -c 1 ${IP_ADDR_LAST_VM} > /dev/null && break
 done  
 if [ "$nb" == "$TIMEOUT_COUNT" ]; then

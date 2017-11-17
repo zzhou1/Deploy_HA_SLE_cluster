@@ -24,7 +24,11 @@ check_cmd_installation() {
         echo "! 1 arg needed (CMD);Exiting"
         exit 1
     fi
-    if ! type $1>/dev/null 2>&1; then echo $F "! '$1' isn't installed yet."; exit 1; fi
+    if ! type $1>/dev/null 2>&1; then 
+	echo $W "! '$1' not exist, attemp 'zypper in $1'"
+	zypper in -y $1
+	[ ! $? ] && ( echo $F "! '$1' isn't installed yet. Please fix it manually!"; exit 1; )
+    fi
 }
 
 
@@ -128,23 +132,35 @@ scp_on_node() {
     fi
 }
 
-# create a pool (on host)
+clean_pool() {
+    if [ $# -lt 1 ];then echo "! 1 arg needed: POOL_NAME; Exiting" ; exit 1; fi
+
+    virsh pool-list --all | grep ${1} > /dev/null
+    if [ $? == "0" ]; then
+        echo "- Clean pool '${1}', and the diretory '${STORAGEP}/${1}' removed "
+        virsh pool-destroy ${1}
+        virsh pool-undefine ${1}
+        rm -rvf ${STORAGEP}/${1}
+    else
+        echo "- Storage pool '${1}' is not present"
+        return 1
+    fi
+}
+
 create_pool() {
     if [ $# -lt 1 ];then echo "! 1 arg needed: POOL_NAME; Exiting" ; exit 1; fi
     POOL=$1
     echo "############ START create a pool ${POOL} #############"
     check_cmd_installation virsh
+
     virsh pool-list --all | grep ${POOL} > /dev/null
-    if [ $? == "0" ]; then
-        echo "- ${POOL} already present, deleting it"
-        virsh pool-destroy ${POOL}
-        virsh pool-undefine ${POOL}
-        rm -rvf ${STORAGEP}/${POOL}
-    fi
+    [ $? ] && clean_pool ${POOL}
+
     echo "- Create ${POOL}"
     mkdir -p ${STORAGEP}/${POOL}
     virsh pool-define-as --name ${POOL} --type dir --target ${STORAGEP}/${POOL}
     virsh pool-start ${POOL}
     virsh pool-autostart ${POOL}
 }
+
 
