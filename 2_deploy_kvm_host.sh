@@ -91,6 +91,14 @@ install_vm() {
     if [ ! -f ${VMDISK} ]; then echo "- ${VMDISK} NOT present"; exit 1; fi
     echo "- Start VM guest installation in a screen"
 
+
+    # FIXME: for unknown reason, kvm-qemu complain permission deny even as in "root" environment
+    # 	     the following is the workaround
+    #sed -n '/#.*user.*=.*"root"/p' /etc/libvirt/qemu.conf
+    sed -i 's/#.*\(user.*=.*"root"\)/\1/' /etc/libvirt/qemu.conf
+    sed -i 's/#.*\(group.*=.*"root"\)/\1/' /etc/libvirt/qemu.conf
+    systemctl restart libvirtd.service
+
     check_cmd_installation screen
     screen -d -m -S "install_HA_VM_guest_${NAME}" virt-install --name ${NAME} \
 	   --ram ${RAM} \
